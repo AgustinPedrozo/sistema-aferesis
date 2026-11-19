@@ -1,0 +1,16 @@
+.vs/
+x64/
+Debug/
+Release/
+*.user
+*.ipch
+build/
+.gradle/
+.idea/
+local.properties
+*.iml
+api-php/api/config.php
+*.log
+* text=auto
+gradlew text eol=lf
+*.bat text eol=crlf

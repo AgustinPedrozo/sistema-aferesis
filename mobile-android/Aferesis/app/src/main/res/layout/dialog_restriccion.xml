@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Causa"
+        android:textSize="18sp" />
+
+    <Spinner
+        android:id="@+id/spnRestriccion"
+        android:layout_width="match_parent"
+        android:layout_height="56dp" />
+
+    <TextView
+        android:id="@+id/txtDetalle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="16sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Fecha de inicio"
+        android:textSize="18sp" />
+
+    <Button
+        android:id="@+id/btnInicio"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:textSize="18sp" />
+
+    <EditText
+        android:id="@+id/edtObsCausa"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:hint="Observaciones (opcional)"
+        android:importantForAutofill="no"
+        android:inputType="textCapSentences"
+        android:maxLength="1000"
+        android:minHeight="56dp"
+        android:textSize="18sp" />
+
+</LinearLayout>

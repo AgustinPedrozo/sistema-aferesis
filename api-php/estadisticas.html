@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estadísticas del Hemocentro</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f5f4f1;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink2: #52514e;
+    --muted: #6b6a65;
+    --grid: #e6e5e0;
+    --line: #dddcd6;
+    --s1: #2a78d6;      /* azul: serie principal */
+    --s2: #eb6834;      /* naranja: segunda serie */
+    --bad: #b42323;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #121211;
+      --surface: #1a1a19;
+      --ink: #f0efec;
+      --ink2: #c3c2b7;
+      --muted: #9b9a92;
+      --grid: #2d2d2b;
+      --line: #3a3a37;
+      --s1: #3987e5;
+      --s2: #d95926;
+      --bad: #e66767;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 48px; }
+  header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; margin-bottom: 20px; }
+  h1 { margin: 0; font-size: 24px; font-weight: 650; letter-spacing: -.01em; }
+  .sub { color: var(--ink2); font-size: 14px; margin-top: 2px; }
+  .controles { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .controles label { color: var(--ink2); font-size: 14px; }
+  select, button {
+    font: inherit; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer;
+  }
+  button:hover, select:hover { border-color: var(--muted); }
+  button[aria-pressed="true"] { background: var(--s1); border-color: var(--s1); color: #fff; }
+  :focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+
+  .aviso { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; color: var(--ink2); }
+  .aviso strong { color: var(--bad); display: block; margin-bottom: 4px; }
+
+  h2 { font-size: 13px; font-weight: 650; text-transform: uppercase; letter-spacing: .06em; color: var(--ink2); margin: 28px 0 10px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+  .kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .kpi .n { font-size: 30px; font-weight: 650; letter-spacing: -.02em; line-height: 1.15; font-variant-numeric: tabular-nums; }
+  .kpi .t { color: var(--ink2); font-size: 13px; margin-top: 2px; }
+  .kpi .d { color: var(--muted); font-size: 12.5px; margin-top: 6px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr)); gap: 12px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
+  .card.ancha { grid-column: 1 / -1; }
+  .card h3 { margin: 0 0 2px; font-size: 15px; font-weight: 650; }
+  .card .nota { color: var(--muted); font-size: 12.5px; margin-bottom: 12px; }
+  .vacio { color: var(--muted); padding: 18px 0; font-size: 14px; }
+
+  /* barras horizontales */
+  .hb { display: grid; grid-template-columns: minmax(90px, 36%) 1fr auto; gap: 8px 10px; align-items: center; }
+  .hb .et { color: var(--ink2); font-size: 14px; overflow-wrap: anywhere; }
+  .hb .pista { height: 14px; }
+  .hb .barra { height: 14px; border-radius: 0 4px 4px 0; background: var(--s1); min-width: 2px; }
+  .hb .barra.alt { background: var(--s2); }
+  .hb .v { font-variant-numeric: tabular-nums; font-size: 14px; text-align: right; white-space: nowrap; }
+  .hb .v small { color: var(--muted); }
+
+  /* barras verticales (svg) */
+  svg { display: block; width: 100%; height: auto; }
+  svg text { fill: var(--muted); font-size: 12px; font-family: inherit; }
+  svg .val { fill: var(--ink); font-size: 13px; font-weight: 600; }
+  svg .gl { stroke: var(--grid); stroke-width: 1; }
+  svg .base { stroke: var(--line); stroke-width: 1; }
+  svg .b { fill: var(--s1); }
+  svg .b:hover { opacity: .8; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--grid); }
+  th { color: var(--ink2); font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  #tip { position: fixed; z-index: 10; pointer-events: none; display: none; background: var(--ink); color: var(--bg);
+         border-radius: 8px; padding: 6px 10px; font-size: 13px; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+  #tip b { font-variant-numeric: tabular-nums; }
+  footer { color: var(--muted); font-size: 12.5px; margin-top: 28px; }
+
+  @media print {
+    body { background: #fff; }
+    .controles { display: none; }
+    .card, .kpi { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Estadísticas</h1>
+      <div class="sub">Hemocentro Regional de Mar del Plata · Donación por aféresis</div>
+    </div>
+    <div class="controles" id="controles" hidden>
+      <label for="anio">Año</label>
+      <select id="anio"></select>
+      <button type="button" id="btnTabla" aria-pressed="false">Ver como tablas</button>
+      <button type="button" id="btnActualizar">Actualizar</button>
+      <button type="button" id="btnImprimir">Imprimir</button>
+    </div>
+  </header>
+
+  <main id="contenido" aria-live="polite"></main>
+  <footer id="pie"></footer>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var API = 'api/estadisticas_resumen.php';
+  var token = '';
+  var datos = null;
+  var vistaTabla = false;
+
+  var $contenido = document.getElementById('contenido');
+  var $controles = document.getElementById('controles');
+  var $anio = document.getElementById('anio');
+  var $tip = document.getElementById('tip');
+
+  // ---------- Sesión: el programa abre esta página con #token=...; se guarda y se borra de la barra ----------
+  function leerToken() {
+    var t = '';
+    var m = /[#&]token=([0-9a-f]+)/i.exec(location.hash);
+    if (m) {
+      t = m[1];
+      try { sessionStorage.setItem('bs_token', t); } catch (e) {}
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    } else {
+      try { t = sessionStorage.getItem('bs_token') || ''; } catch (e) {}
+    }
+    return t;
+  }
+
+  // ---------- Utilidades ----------
+  function el(tag, cls, texto) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (texto !== undefined && texto !== null) e.textContent = texto;
+    return e;
+  }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function nf(n) { return Number(n).toLocaleString('es-AR'); }
+  function pct(parte, total) { return total > 0 ? Math.round(parte * 100 / total) : 0; }
+  function limpiar(nodo) { while (nodo.firstChild) nodo.removeChild(nodo.firstChild); }
+
+  function aviso(titulo, texto) {
+    limpiar($contenido);
+    var a = el('div', 'aviso');
+    a.appendChild(el('strong', null, titulo));
+    a.appendChild(document.createTextNode(texto));
+    $contenido.appendChild(a);
+  }
+
+  // ---------- Componentes ----------
+  function kpi(numero, titulo, detalle) {
+    var k = el('div', 'kpi');
+    k.appendChild(el('div', 'n', numero));
+    k.appendChild(el('div', 't', titulo));
+    if (detalle) k.appendChild(el('div', 'd', detalle));
+    return k;
+  }
+
+  function tarjeta(titulo, nota, ancha) {
+    var c = el('section', 'card' + (ancha ? ' ancha' : ''));
+    c.appendChild(el('h3', null, titulo));
+    c.appendChild(el('div', 'nota', nota || ''));
+    return c;
+  }
+
+  function tabla(filas, colEtiqueta, colValor) {
+    var t = el('table');
+    var cab = el('tr');
+    cab.appendChild(el('th', null, colEtiqueta));
+    var th = el('th', 'num', colValor);
+    cab.appendChild(th);
+    t.appendChild(cab);
+    filas.forEach(function (f) {
+      var tr = el('tr');
+      tr.appendChild(el('td', null, f.etiqueta));
+      tr.appendChild(el('td', 'num', nf(f.valor)));
+      t.appendChild(tr);
+    });
+    return t;
+  }
+
+  // Barras horizontales: etiqueta, barra y valor (con porcentaje opcional)
+  function barrasH(items, opciones) {
+    opciones = opciones || {};
+    var total = items.reduce(function (s, i) { return s + i.valor; }, 0);
+    var max = Math.max.apply(null, items.map(function (i) { return i.valor; }).concat([1]));
+    var caja = el('div', 'hb');
+    items.forEach(function (i, idx) {
+      caja.appendChild(el('div', 'et', i.etiqueta));
+      var pista = el('div', 'pista');
+      var barra = el('div', 'barra' + (opciones.alternar && idx === 1 ? ' alt' : ''));
+      barra.style.width = (i.valor * 100 / max) + '%';
+      barra.setAttribute('data-tip', esc(i.etiqueta) + ': <b>' + nf(i.valor) + '</b>' +
+        (opciones.porcentaje ? ' (' + pct(i.valor, total) + '%)' : ''));
+      pista.appendChild(barra);
+      caja.appendChild(pista);
+      var v = el('div', 'v', nf(i.valor));
+      if (opciones.porcentaje) {
+        var s = el('small', null, '  ' + pct(i.valor, total) + '%');
+        v.appendChild(s);
+      }
+      caja.appendChild(v);
+    });
+    return caja;
+  }
+
+  function pasoNice(max) {
+    var rough = Math.max(max / 4, 1);
+    var p = Math.pow(10, Math.floor(Math.log10(rough)));
+    var cand = [1, 2, 5, 10];
+    for (var i = 0; i < cand.length; i++) { if (cand[i] * p >= rough) return cand[i] * p; }
+    return 10 * p;
+  }
+
+  // Barras verticales en SVG: eje con líneas suaves, barras finas con extremo redondeado
+  function barrasV(items) {
+    var W = 520, H = 230, ml = 34, mr = 8, mt = 20, mb = 28;
+    var max = Math.max.apply(null, items.map(function (i) { return i.valor; }).concat([1]));
+    var paso = pasoNice(max);
+    var tope = Math.ceil(max / paso) * paso;
+    var pw = W - ml - mr, ph = H - mt - mb;
+    var NS = 'http://www.w3.org/2000/svg';
+    function s(tag, attrs, texto) {
+      var e = document.createElementNS(NS, tag);
+      for (var k in attrs) e.setAttribute(k, attrs[k]);
+      if (texto !== undefined) e.textContent = texto;
+      return e;
+    }
+    var svg = s('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' });
+    for (var v = 0; v <= tope; v += paso) {
+      var y = mt + ph - (v / tope) * ph;
+      svg.appendChild(s('line', { x1: ml, x2: W - mr, y1: y, y2: y, 'class': v === 0 ? 'base' : 'gl' }));
+      svg.appendChild(s('text', { x: ml - 6, y: y + 4, 'text-anchor': 'end' }, nf(v)));
+    }
+    var slot = pw / items.length;
+    var bw = Math.min(slot * 0.55, 34);
+    var maxIdx = items.reduce(function (m, i, idx, a) { return i.valor > a[m].valor ? idx : m; }, 0);
+    items.forEach(function (i, idx) {
+      var cx = ml + slot * idx + slot / 2;
+      var h = (i.valor / tope) * ph;
+      var x = cx - bw / 2, yb = mt + ph;
+      if (i.valor > 0) {
+        var r = Math.min(4, bw / 2, h);
+        var d = 'M' + x + ',' + yb + 'V' + (yb - h + r) + 'Q' + x + ',' + (yb - h) + ' ' + (x + r) + ',' + (yb - h) +
+                'H' + (x + bw - r) + 'Q' + (x + bw) + ',' + (yb - h) + ' ' + (x + bw) + ',' + (yb - h + r) + 'V' + yb + 'Z';
+        var barra = s('path', { d: d, 'class': 'b' });
+        barra.setAttribute('data-tip', esc(i.etiqueta) + ': <b>' + nf(i.valor) + '</b>');
+        svg.appendChild(barra);
+      }
+      // área de contacto más ancha que la barra, para el cursor
+      var hit = s('rect', { x: cx - slot / 2, y: mt, width: slot, height: ph, fill: 'transparent' });
+      hit.setAttribute('data-tip', esc(i.etiqueta) + ': <b>' + nf(i.valor) + '</b>');
+      svg.appendChild(hit);
+      // valor: en todas si son pocas; si no, solo en la más alta
+      if (i.valor > 0 && (items.length <= 7 || idx === maxIdx)) {
+        svg.appendChild(s('text', { x: cx, y: yb - h - 5, 'text-anchor': 'middle', 'class': 'val' }, nf(i.valor)));
+      }
+      svg.appendChild(s('text', { x: cx, y: H - 8, 'text-anchor': 'middle' }, i.corta || i.etiqueta));
+    });
+    return svg;
+  }
+
+  // Agrega a la tarjeta el gráfico o su tabla según la vista elegida
+  function cuerpo(card, items, forma, opciones, colEtiqueta, colValor) {
+    var hay = items.some(function (i) { return i.valor > 0; });
+    if (!hay) { card.appendChild(el('div', 'vacio', 'Sin datos para este año.')); return; }
+    if (vistaTabla) { card.appendChild(tabla(items, colEtiqueta, colValor)); return; }
+    card.appendChild(forma === 'v' ? barrasV(items) : barrasH(items, opciones));
+  }
+
+  // ---------- Armado de la página ----------
+  function pintar() {
+    var d = datos;
+    limpiar($contenido);
+
+    // Resumen
+    $contenido.appendChild(el('h2', null, 'Resumen'));
+    var k = el('div', 'kpis');
+    k.appendChild(kpi(nf(d.donantes.activos), 'Donantes activos',
+      nf(d.donantes.total) + ' registrados · ' + nf(d.donantes.inactivos) + ' de baja'));
+    k.appendChild(kpi(nf(d.donaciones.total), 'Donaciones en ' + d.anio,
+      nf(d.donaciones.donantes_distintos) + ' donantes distintos' +
+      (d.donaciones.promedio_por_donante !== null ? ' · promedio ' + String(d.donaciones.promedio_por_donante).replace('.', ',') : '')));
+    k.appendChild(kpi(nf(d.donaciones.unidades_plaquetas + d.donaciones.unidades_plasma), 'Unidades obtenidas',
+      nf(d.donaciones.unidades_plaquetas) + ' de plaquetas · ' + nf(d.donaciones.unidades_plasma) + ' de plasma'));
+    k.appendChild(kpi(nf(d.diferimientos.donantes_diferidos_vigentes), 'Donantes diferidos hoy', 'Con alguna restricción vigente'));
+    k.appendChild(kpi(d.turnos.ausentismo_porcentaje === null ? '—' : String(d.turnos.ausentismo_porcentaje).replace('.', ',') + '%',
+      'Ausentismo en turnos', 'Ausentes sobre turnos cumplidos o perdidos'));
+    k.appendChild(kpi(nf(d.control.excepciones_autorizadas), 'Excepciones autorizadas', 'Extracciones fuera de los límites en ' + d.anio));
+    $contenido.appendChild(k);
+
+    // Donaciones
+    $contenido.appendChild(el('h2', null, 'Donaciones'));
+    var g1 = el('div', 'grid');
+    var cMes = tarjeta('Donaciones por mes', 'Procedimientos de aféresis realizados en ' + d.anio);
+    cuerpo(cMes, d.donaciones.por_mes.map(function (m) { return { etiqueta: m.nombre, corta: m.nombre.slice(0, 3), valor: m.donaciones }; }),
+      'v', null, 'Mes', 'Donaciones');
+    g1.appendChild(cMes);
+    var cTipo = tarjeta('Por tipo de donación', 'Plaquetas, plasma o ambos');
+    cuerpo(cTipo, d.donaciones.por_tipo.map(function (t) { return { etiqueta: t.tipo, valor: t.cantidad }; }),
+      'h', { porcentaje: true }, 'Tipo', 'Donaciones');
+    g1.appendChild(cTipo);
+    $contenido.appendChild(g1);
+
+    // Donantes
+    $contenido.appendChild(el('h2', null, 'Donantes'));
+    var g2 = el('div', 'grid');
+    var cSexo = tarjeta('Por sexo', 'Donantes activos');
+    cuerpo(cSexo, d.donantes.por_sexo.map(function (s) { return { etiqueta: s.sexo, valor: s.cantidad }; }),
+      'h', { porcentaje: true }, 'Sexo', 'Donantes');
+    g2.appendChild(cSexo);
+    var cEdad = tarjeta('Por edad', 'Donantes activos, por rango de edad');
+    cuerpo(cEdad, d.donantes.por_edad.map(function (e) { return { etiqueta: e.rango, corta: e.rango.replace(' a ', '–'), valor: e.cantidad }; }),
+      'v', null, 'Edad', 'Donantes');
+    g2.appendChild(cEdad);
+    $contenido.appendChild(g2);
+
+    // Entrevistas, turnos y diferimientos
+    $contenido.appendChild(el('h2', null, 'Entrevistas, turnos y diferimientos'));
+    var g3 = el('div', 'grid');
+    var cEnt = tarjeta('Resultado de las entrevistas', 'Aptos y no aptos en ' + d.anio);
+    cuerpo(cEnt, [{ etiqueta: 'Aptos', valor: d.entrevistas.aptos }, { etiqueta: 'No aptos (diferidos)', valor: d.entrevistas.no_aptos }],
+      'h', { porcentaje: true, alternar: true }, 'Resultado', 'Entrevistas');
+    g3.appendChild(cEnt);
+    var cTurnos = tarjeta('Turnos por estado', 'Turnos de ' + d.anio);
+    cuerpo(cTurnos, d.turnos.por_estado.map(function (t) { return { etiqueta: t.estado, valor: t.cantidad }; }),
+      'h', { porcentaje: true }, 'Estado', 'Turnos');
+    g3.appendChild(cTurnos);
+    var cCausas = tarjeta('Causas de diferimiento más frecuentes', 'Restricciones registradas en ' + d.anio, true);
+    cuerpo(cCausas, d.diferimientos.causas_mas_frecuentes.map(function (c) { return { etiqueta: c.causa, valor: c.cantidad }; }),
+      'h', {}, 'Causa', 'Veces');
+    g3.appendChild(cCausas);
+    $contenido.appendChild(g3);
+
+    document.getElementById('pie').textContent = 'Datos generados el ' + d.generado.replace(' ', ' a las ') +
+      ' · Donantes y diferimientos vigentes: situación de hoy · Resto: año ' + d.anio;
+  }
+
+  // ---------- Carga ----------
+  function cargar() {
+    if (!token) {
+      $controles.hidden = true;
+      aviso('Falta iniciar sesión', 'Abra esta página desde el botón Estadísticas del programa del Hemocentro.');
+      return;
+    }
+    var anio = $anio.value || '';
+    fetch(API + (anio ? '?anio=' + encodeURIComponent(anio) : ''), { headers: { 'X-Auth-Token': token } })
+      .then(function (r) { return r.json().then(function (j) { return { status: r.status, cuerpo: j }; }); })
+      .then(function (r) {
+        if (r.status === 401) {
+          try { sessionStorage.removeItem('bs_token'); } catch (e) {}
+          $controles.hidden = true;
+          aviso('La sesión venció', 'Vuelva a abrir esta página desde el botón Estadísticas del programa.');
+          return;
+        }
+        if (r.status === 403) {
+          $controles.hidden = true;
+          aviso('Sin permiso', 'Solo la Jefa de Área/Gerente y el Administrador pueden ver las estadísticas.');
+          return;
+        }
+        if (!r.cuerpo || !r.cuerpo.ok) {
+          aviso('No se pudieron cargar los datos', (r.cuerpo && r.cuerpo.error) || 'Intente de nuevo en un momento.');
+          return;
+        }
+        datos = r.cuerpo;
+        $controles.hidden = false;
+        pintar();
+      })
+      .catch(function () {
+        aviso('No se pudo conectar con el servidor', 'Revise que Apache y MariaDB estén iniciados en XAMPP.');
+      });
+  }
+
+  function llenarAnios() {
+    var actual = new Date().getFullYear();
+    for (var a = actual; a >= actual - 5; a--) {
+      var o = el('option', null, String(a));
+      o.value = String(a);
+      $anio.appendChild(o);
+    }
+  }
+
+  // ---------- Tooltip: un solo globo para todos los gráficos ----------
+  document.addEventListener('pointermove', function (ev) {
+    var t = ev.target.closest ? ev.target.closest('[data-tip]') : null;
+    if (!t) { $tip.style.display = 'none'; return; }
+    $tip.innerHTML = t.getAttribute('data-tip');   // las etiquetas ya vienen escapadas con esc()
+    $tip.style.display = 'block';
+    var x = ev.clientX + 14, y = ev.clientY + 14;
+    if (x + $tip.offsetWidth > window.innerWidth - 8) x = ev.clientX - $tip.offsetWidth - 14;
+    if (y + $tip.offsetHeight > window.innerHeight - 8) y = ev.clientY - $tip.offsetHeight - 14;
+    $tip.style.left = Math.max(8, x) + 'px';
+    $tip.style.top = Math.max(8, y) + 'px';
+  });
+  document.addEventListener('pointerleave', function () { $tip.style.display = 'none'; });
+
+  // ---------- Botones ----------
+  $anio.addEventListener('change', cargar);
+  document.getElementById('btnActualizar').addEventListener('click', cargar);
+  document.getElementById('btnImprimir').addEventListener('click', function () { window.print(); });
+  document.getElementById('btnTabla').addEventListener('click', function () {
+    vistaTabla = !vistaTabla;
+    this.setAttribute('aria-pressed', vistaTabla ? 'true' : 'false');
+    this.textContent = vistaTabla ? 'Ver como gráficos' : 'Ver como tablas';
+    if (datos) pintar();
+  });
+
+  token = leerToken();
+  llenarAnios();
+  cargar();
+})();
+</script>
+</body>
+</html>
