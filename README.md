@@ -8,7 +8,27 @@ Sistema para digitalizar la donación de **plaquetas y plasma por aféresis** en
 El personal del centro no está acostumbrado a la tecnología más allá de aplicaciones como WhatsApp. El objetivo de diseño fue **cero fricción**: pantallas simples, flujos guiados, mensajes claros, confirmaciones visuales y sonoras, y validaciones suaves que ayudan en lugar de bloquear.
 
 ## Capturas
-> Agregar imágenes en `docs/capturas/` y enlazarlas acá.
+### Escritorio
+**Pantalla principal**
+
+![Pantalla principal](docs/capturas/principal.png)
+
+**Agenda de turnos**
+
+![Agenda de turnos](docs/capturas/agenda-turnos.png)
+
+**Extracción por aféresis**
+
+![Extracción por aféresis](docs/capturas/extraccion.png)
+
+**Estadísticas para la Jefa de Área**
+
+![Estadísticas](docs/capturas/estadisticas.png)
+
+### App Android
+**Menú principal**
+
+<img src="docs/capturas/android-menu.png" alt="Menú principal de la app Android" width="320">
 
 ## Funcionalidades
 - **Donantes:** alta, baja lógica y modificación, con peso y altura. Validación de DNI, teléfono y fecha de nacimiento realista (16 a 100 años).
